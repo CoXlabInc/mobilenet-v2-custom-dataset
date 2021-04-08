@@ -1,6 +1,6 @@
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.vgg19 import preprocess_input
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import Model
 from tensorflow.keras.models import load_model
 import numpy as np

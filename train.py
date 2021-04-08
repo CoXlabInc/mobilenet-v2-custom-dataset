@@ -23,7 +23,7 @@ import json
 import datetime
 import time
 
-from utils import generate_batches, generate_batches_with_augmentation, create_folders
+from utils import generate_dataset, generate_batches, generate_batches_with_augmentation, create_folders
 
 # load the user configs
 with open('conf.json') as f:    
@@ -84,18 +84,18 @@ files = []
 for ext in [ 'png', 'jpg', 'jpeg' ]:
   files.extend(glob.glob(train_path + '/*/*' + ext))
 samples = len(files)
-# x, y = generate_dataset(train_path)
-# print("dataset # of x:%u, #of y:%u" % (len(x), len(y)))
+x, y = generate_dataset(files, classes)
+print("dataset # of x:%u, #of y:%u" % (len(x), len(y)))
 
 if data_augmentation:
   model.fit(generate_batches_with_augmentation(train_path, batch_size, validation_split, augmented_data), 
             verbose=1, epochs=epochs, callbacks=[checkpoint])
 else:
-  model.fit(generate_batches(files, classes, batch_size), epochs=epochs, 
-            steps_per_epoch=samples//batch_size,
-            verbose=1,
-            callbacks=[checkpoint])
-  # model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=2, callbacks=[checkpoint])
+  # model.fit(generate_batches(files, classes, batch_size), epochs=epochs, 
+  #           steps_per_epoch=samples//batch_size,
+  #           verbose=1,
+  #           callbacks=[checkpoint])
+  model.fit(x, y, batch_size=batch_size, epochs=epochs, validation_split=validation_split, verbose=1, callbacks=[checkpoint])
 
 print ("Saving...")
 model.save(model_path + "/save_model_stage1.h5") 
@@ -114,10 +114,11 @@ if epochs_after_unfreeze > 0:
   checkpoint = ModelCheckpoint("logs/weights.h5", monitor='loss', save_best_only=True, period=checkpoint_period_after_unfreeze)
   if data_augmentation:
     model.fit(generate_batches_with_augmentation(train_path, batch_size, validation_split, augmented_data), 
-              verbose=1, epochs=epochs, callbacks=[checkpoint])
+              verbose=1, epochs=epochs_after_unfreeze, callbacks=[checkpoint])
   else:
-    model.fit(generate_batches(files, classes, batch_size), epochs=epochs_after_unfreeze, 
-              steps_per_epoch=samples//batch_size, verbose=1, callbacks=[checkpoint])
+    model.fit(x, y, batch_size=batch_size, epochs=epochs_after_unfreeze, validation_split=validation_split, verbose=1, callbacks=[checkpoint])
+    # model.fit(generate_batches(files, classes, batch_size), epochs=epochs_after_unfreeze, 
+    #           steps_per_epoch=samples//batch_size, verbose=1, callbacks=[checkpoint])
 
   print ("Saving...")
   model.save(model_path + "/save_model_stage2.h5") 

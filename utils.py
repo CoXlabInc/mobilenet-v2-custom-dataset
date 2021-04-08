@@ -4,8 +4,21 @@ import cv2
 import numpy as np
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 import os
+
+def generate_dataset(files, classes):
+    x = []
+    y = []
     
+    for f in files:
+        img = cv2.imread(f)
+        img = cv2.resize(img, (224, 224))
+        x.append(preprocess_input(img))
+        y.append(int(f.split('/')[1]))
+
+    return np.array(x), to_categorical(y, num_classes=classes)
+
 def generate_batches(files, classes, batchSize):
     while True:
         for f in range(0, len(files), batchSize):
@@ -14,7 +27,7 @@ def generate_batches(files, classes, batchSize):
             for i in range(f, f+batchSize):
                 if i < len(files):  
                     img = cv2.imread(files[i])
-                    x.append(cv2.resize(img, (224, 224)))
+                    x.append(eprocess_input(cv2.resize(img, (224, 224))))
                     y.append(int(files[i].split('/')[1]))
             yield (np.array(x), to_categorical(y, num_classes=classes))
 
