@@ -1,8 +1,8 @@
-from keras.applications.mobilenetv2 import MobileNetV2
-from keras.preprocessing import image
-from keras.applications.vgg19 import preprocess_input
-from keras.models import Model
-from keras.models import load_model
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.vgg19 import preprocess_input
+from tensorflow.keras.models import Model
+from tensorflow.keras.models import load_model
 import numpy as np
 
 # other imports
@@ -29,7 +29,9 @@ for folder in folders:
     #print("- class: {}".format(folder))
     success = 0
     average_confidence = 0
-    files = glob.glob(test_path + "/" + folder + "/*.jpg")
+    files = []
+    for ext in [ 'jpg', 'jpeg', 'png' ]:
+      files.extend(glob.glob(test_path + '/' + folder + '/*.' + ext))
     for file in files:
         img = image.load_img(file, target_size=(224, 224))
         x = image.img_to_array(img)
@@ -39,7 +41,7 @@ for folder in folders:
         y_class = y_prob.argmax(axis=-1)
         y_class = y_class[0]
         y_confidence = int(y_prob[0][y_class] * 100)
-        #print("predicted label: {} (prob = {})".format(y_class, y_confidence))
+        print("[{}] predicted label: {} (prob = {})".format(file, y_class, y_confidence))
         if y_class == int(folder):
             success += 1
         average_confidence += y_confidence

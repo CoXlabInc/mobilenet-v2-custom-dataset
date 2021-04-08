@@ -2,13 +2,12 @@
 import glob
 import cv2
 import numpy as np
-from keras.utils import to_categorical
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import os
-
-def generate_batches(path, batchSize):
+    
+def generate_batches(files, classes, batchSize):
     while True:
-        files = glob.glob(path + '/*/*jpg')
         for f in range(0, len(files), batchSize):
             x = []
             y = []
@@ -17,7 +16,7 @@ def generate_batches(path, batchSize):
                     img = cv2.imread(files[i])
                     x.append(cv2.resize(img, (224, 224)))
                     y.append(int(files[i].split('/')[1]))
-            yield (np.array(x), to_categorical(y, num_classes=10))
+            yield (np.array(x), to_categorical(y, num_classes=classes))
 
 def generate_batches_with_augmentation(train_path, batch_size, validation_split, augmented_data):
         train_datagen = ImageDataGenerator(

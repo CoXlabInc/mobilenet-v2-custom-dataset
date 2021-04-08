@@ -3,16 +3,20 @@ import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
 import os
 import tensorflow as tf
+import logging
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.logging.set_verbosity(tf.logging.ERROR)
+
+logger = tf.get_logger()
+logger.setLevel(logging.ERROR)
 
 # keras imports
-from keras.applications.mobilenetv2 import MobileNetV2
-from keras.models import Model, load_model
-from keras.layers import Dense, GlobalAveragePooling2D, Input
-from keras.utils import to_categorical
-from keras.optimizers import SGD
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 # other imports
 import json
@@ -76,16 +80,22 @@ model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
 print ("Start training...")
 import glob
-files = glob.glob(train_path + '/*/*jpg')
+files = []
+for ext in [ 'png', 'jpg', 'jpeg' ]:
+  files.extend(glob.glob(train_path + '/*/*' + ext))
 samples = len(files)
+# x, y = generate_dataset(train_path)
+# print("dataset # of x:%u, #of y:%u" % (len(x), len(y)))
 
 if data_augmentation:
-  model.fit_generator(
-        generate_batches_with_augmentation(train_path, batch_size, validation_split, augmented_data), 
-        verbose=1, epochs=epochs, callbacks=[checkpoint])
+  model.fit(generate_batches_with_augmentation(train_path, batch_size, validation_split, augmented_data), 
+            verbose=1, epochs=epochs, callbacks=[checkpoint])
 else:
-  model.fit_generator(generate_batches(train_path, batch_size), epochs=epochs, 
-        steps_per_epoch=samples//batch_size, verbose=1, callbacks=[checkpoint])
+  model.fit(generate_batches(files, classes, batch_size), epochs=epochs, 
+            steps_per_epoch=samples//batch_size,
+            verbose=1,
+            callbacks=[checkpoint])
+  # model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=2, callbacks=[checkpoint])
 
 print ("Saving...")
 model.save(model_path + "/save_model_stage1.h5") 
@@ -103,12 +113,11 @@ if epochs_after_unfreeze > 0:
   print ("Start training - phase 2...")
   checkpoint = ModelCheckpoint("logs/weights.h5", monitor='loss', save_best_only=True, period=checkpoint_period_after_unfreeze)
   if data_augmentation:
-    model.fit_generator(
-          generate_batches_with_augmentation(train_path, batch_size, validation_split, augmented_data), 
-          verbose=1, epochs=epochs, callbacks=[checkpoint])
+    model.fit(generate_batches_with_augmentation(train_path, batch_size, validation_split, augmented_data), 
+              verbose=1, epochs=epochs, callbacks=[checkpoint])
   else:
-    model.fit_generator(generate_batches(train_path, batch_size), epochs=epochs_after_unfreeze, 
-          steps_per_epoch=samples//batch_size, verbose=1, callbacks=[checkpoint])
+    model.fit(generate_batches(files, classes, batch_size), epochs=epochs_after_unfreeze, 
+              steps_per_epoch=samples//batch_size, verbose=1, callbacks=[checkpoint])
 
   print ("Saving...")
   model.save(model_path + "/save_model_stage2.h5") 
